@@ -1,5 +1,5 @@
 // ── Config ────────────────────────────────────────────────────────────────────
-const API_BASE = window.API_BASE || '/api';
+const API_BASE = window.API_BASE || 'https://edututor-wjdu.onrender.com/api';
 
 // ── Token Management ──────────────────────────────────────────────────────────
 const Auth = {
