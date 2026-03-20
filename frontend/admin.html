@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel – Education Tutor</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1A237E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+    .admin-sidebar {
+      background: var(--navy);
+      padding: 16px 0;
+      min-height: calc(100vh - 56px);
+    }
+    .admin-sidebar .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.72);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all var(--transition);
+    }
+    .admin-sidebar .nav-item:hover { color: white; background: rgba(255,255,255,0.08); }
+    .admin-sidebar .nav-item.active { color: white; background: rgba(255,255,255,0.15); border-left: 3px solid var(--saffron); }
+    .admin-sidebar .nav-section {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(255,255,255,0.35);
+      padding: 14px 20px 6px;
+    }
+
+    .admin-content { padding: 24px 20px; overflow-y: auto; max-height: calc(100vh - 56px); }
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+
+    /* Upload area */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--cream);
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--saffron);
+      background: var(--saffron-pale);
+    }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .upload-zone p { font-size: 0.88rem; color: var(--text-soft); }
+    #pdf-input { display: none; }
+
+    /* Progress */
+    .upload-progress { margin-top: 12px; display: none; }
+
+    /* Textbook table */
+    .tb-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    .tb-table th {
+      background: var(--navy-pale);
+      color: var(--navy);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tb-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .tb-table tr:hover td { background: var(--cream); }
+    .tb-table .status-ready    { color: var(--green); font-weight: 600; }
+    .tb-table .status-processing { color: var(--saffron); font-weight: 600; }
+    .tb-table .status-error    { color: #c62828; font-weight: 600; }
+
+    /* Analytics */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .chart-placeholder {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+    .chart-placeholder h3 { font-size: 0.95rem; margin-bottom: 12px; }
+    .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+    .bar-row__label { width: 80px; color: var(--text-soft); text-align: right; flex-shrink: 0; }
+    .bar-row__track { flex: 1; height: 20px; background: var(--cream); border-radius: var(--radius-full); overflow: hidden; }
+    .bar-row__fill  { height: 100%; background: var(--navy-light); border-radius: var(--radius-full); transition: width 0.6s ease; }
+    .bar-row__val   { width: 30px; font-weight: 600; }
+
+    /* Students table */
+    .students-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .students-table th { background: var(--navy-pale); color: var(--navy); padding: 9px 12px; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
+    .students-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .students-table tr:hover td { background: var(--cream); }
+
+    @media (max-width: 640px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; }
+      .analytics-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar__brand">
+      <span class="logo-icon">📚</span>
+      <span>EduTutor Admin</span>
+    </div>
+    <div class="navbar__actions">
+      <div class="navbar__user" id="nav-user" style="display:none">
+        <div class="navbar__user-avatar" id="nav-avatar"></div>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="logout-btn">Sign Out</button>
+    </div>
+  </nav>
+
+  <div class="admin-layout">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="nav-section">Content</div>
+      <button class="nav-item active" data-panel="upload-panel" onclick="switchAdminPanel(this)">
+        📤 Upload Textbook
+      </button>
+      <button class="nav-item" data-panel="books-panel" onclick="switchAdminPanel(this)">
+        📚 Manage Books
+      </button>
+
+      <div class="nav-section">Insights</div>
+      <button class="nav-item" data-panel="analytics-panel" onclick="switchAdminPanel(this)">
+        📊 Analytics
+      </button>
+      <button class="nav-item" data-panel="students-panel" onclick="switchAdminPanel(this)">
+        🎓 Students
+      </button>
+
+      <div class="nav-section">System</div>
+      <button class="nav-item" data-panel="settings-panel" onclick="switchAdminPanel(this)">
+        ⚙️ Settings
+      </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+
+      <!-- ── UPLOAD PANEL ───────────────────────────────────────────────────── -->
+      <div class="admin-panel active" id="upload-panel">
+        <h2 class="mb-4">Upload Textbook PDF</h2>
+
+        <div class="card">
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pdf-input').click()"
+               ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+            <div class="upload-icon">📄</div>
+            <p><strong>Click to choose PDF</strong> or drag & drop here</p>
+            <p style="margin-top:4px">Max 50MB · PDF only</p>
+          </div>
+          <input type="file" id="pdf-input" accept=".pdf,application/pdf" onchange="onFileSelected()">
+
+          <div id="file-info" class="hidden" style="margin-top:12px;padding:10px 12px;background:var(--green-pale);border-radius:var(--radius-sm);font-size:0.87rem;color:var(--green)">
+            📄 <span id="file-name"></span>
+          </div>
+
+          <hr class="divider">
+
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-input" id="tb-title" placeholder="e.g. Science for Class 8">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label class="form-label">Board</label>
+              <select class="form-select" id="tb-board">
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="State">State Board</option>
+                <option value="NIOS">NIOS</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Class</label>
+              <select class="form-select" id="tb-class">
+                <option value="6">Class 6</option>
+                <option value="7">Class 7</option>
+                <option value="8" selected>Class 8</option>
+                <option value="9">Class 9</option>
+                <option value="10">Class 10</option>
+                <option value="11">Class 11</option>
+                <option value="12">Class 12</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <select class="form-select" id="tb-subject">
+                <option value="Science">Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="English">English</option>
+                <option value="History">History</option>
+                <option value="Geography">Geography</option>
+                <option value="Civics">Civics</option>
+                <option value="Hindi">Hindi</option>
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Biology">Biology</option>
+                <option value="Economics">Economics</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="upload-progress" id="upload-progress">
+            <div class="progress"><div class="progress__bar" id="prog-bar" style="width:0%"></div></div>
+            <p class="text-small text-soft mt-1" id="upload-status">Processing…</p>
+          </div>
+
+          <div id="upload-msg" class="hidden mt-3"></div>
+
+          <button class="btn btn--primary btn--full btn--lg mt-3" id="upload-btn" onclick="uploadTextbook()">
+            📤 Upload & Process
+          </button>
+        </div>
+      </div>
+
+      <!-- ── BOOKS PANEL ────────────────────────────────────────────────────── -->
+      <div class="admin-panel" id="books-panel">
+        <div class="flex-between mb-4">
+          <h2>Uploaded Textbooks</h2>
+          <button class="btn btn--sm btn--secondary" onclick="loadBooks()">🔄 Refresh</button>
+        </div>
+        <div id="books-table-wrap">
+          <div class="text-soft text-center" style="padding:30px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── ANALYTICS PANEL ────────────────────────────────────────────────── -->
+      <div class="admin-panel" id="analytics-panel">
+        <h2 class="mb-4">Analytics Dashboard</h2>
+
+        <div class="stats-grid" id="analytics-stats">
+          <div class="stat-card"><div class="stat-card__value" id="st-students">–</div><div class="stat-card__label">Students</div></div>
+          <div class="stat-card"><div class="stat-card__value" id="st-books">–</div><div class="stat-card__label">Textbooks</div></div>
+          <div class="stat-card"><div class="stat-card__value" id="st-questions">–</div><div class="stat-card__label">Questions</div></div>
+          <div class="stat-card"><div class="stat-card__value" id="st-cache">–%</div><div class="stat-card__label">Cache Rate</div></div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="chart-placeholder">
+            <h3>📈 Questions (Last 7 Days)</h3>
+            <div class="bar-chart" id="daily-chart">
+              <div class="text-soft text-small">Loading…</div>
+            </div>
+          </div>
+          <div class="chart-placeholder">
+            <h3>📚 Top Subjects Asked</h3>
+            <div class="bar-chart" id="subject-chart">
+              <div class="text-soft text-small">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <h3 style="font-size:0.95rem;margin-bottom:12px">📦 FAQ Cache</h3>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <div><span class="text-soft text-small">Cached Questions:</span><br><strong id="faq-count">–</strong></div>
+            <div><span class="text-soft text-small">Total Cache Hits:</span><br><strong id="faq-hits">–</strong></div>
+            <div><span class="text-soft text-small">Avg Quiz Score:</span><br><strong id="avg-score">–</strong></div>
+            <div><span class="text-soft text-small">Total Chunks:</span><br><strong id="total-chunks">–</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STUDENTS PANEL ─────────────────────────────────────────────────── -->
+      <div class="admin-panel" id="students-panel">
+        <div class="flex-between mb-4">
+          <h2>Registered Students</h2>
+          <button class="btn btn--sm btn--secondary" onclick="loadStudents()">🔄 Refresh</button>
+        </div>
+        <div id="students-table-wrap">
+          <div class="text-soft text-center" style="padding:30px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS PANEL ─────────────────────────────────────────────────── -->
+      <div class="admin-panel" id="settings-panel">
+        <h2 class="mb-4">System Settings</h2>
+        <div class="card">
+          <h3 class="mb-3" style="font-size:0.95rem">About This Platform</h3>
+          <table style="width:100%;font-size:0.87rem;border-collapse:collapse">
+            <tr><td style="padding:8px 0;color:var(--text-soft);width:160px">Version</td><td><strong>1.0.0</strong></td></tr>
+            <tr><td style="padding:8px 0;color:var(--text-soft)">Embedding Model</td><td><strong>all-MiniLM-L6-v2</strong></td></tr>
+            <tr><td style="padding:8px 0;color:var(--text-soft)">LLM</td><td><strong>Ollama / Mistral</strong></td></tr>
+            <tr><td style="padding:8px 0;color:var(--text-soft)">Vector DB</td><td><strong>MongoDB Atlas Vector Search</strong></td></tr>
+            <tr><td style="padding:8px 0;color:var(--text-soft)">Context Tokens</td><td><strong>1500</strong></td></tr>
+            <tr><td style="padding:8px 0;color:var(--text-soft)">Top K Chunks</td><td><strong>10</strong></td></tr>
+          </table>
+          <div class="mt-4">
+            <button class="btn btn--secondary btn--sm" onclick="checkOllamaHealth()">🔍 Check LLM Status</button>
+            <span id="ollama-status" class="text-small text-soft" style="margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    if (!Auth.requireAdmin()) { /* redirect handled */ }
+
+    window._selectedFile = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setupNavbar();
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("[SW] Registered"))
+        .catch(e => console.warn("[SW] Registration failed:", e));
+    }
+  </script>
+</body>
+</html>

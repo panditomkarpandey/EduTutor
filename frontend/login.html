@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Education Tutor – AI learning platform for rural India">
+  <title>Login – Education Tutor</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1A237E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .lang-toggle {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .lang-btn {
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-mid);
+    }
+    .lang-btn.active {
+      background: var(--navy);
+      color: white;
+      border-color: var(--navy);
+    }
+    .divider-text {
+      text-align: center;
+      position: relative;
+      margin: 18px 0;
+    }
+    .divider-text::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider-text span {
+      position: relative;
+      background: var(--white);
+      padding: 0 12px;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+    .form-toggle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-mid);
+      margin-top: 16px;
+    }
+    .form-toggle a { color: var(--saffron); font-weight: 600; }
+    .role-select-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .role-option {
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .role-option.selected {
+      border-color: var(--navy);
+      background: var(--navy-pale);
+    }
+    .role-option input { display: none; }
+    .role-option .role-icon { font-size: 1.5rem; }
+    .role-option .role-label { font-size: 0.8rem; font-weight: 600; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-big">📚</div>
+        <h1>Education Tutor</h1>
+        <p>AI-powered learning for every student</p>
+      </div>
+
+      <!-- Language Toggle -->
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="switchLang('en', this)">English</button>
+        <button class="lang-btn" onclick="switchLang('hi', this)">हिंदी</button>
+      </div>
+
+      <!-- Error alert -->
+      <div id="auth-error" class="alert alert--error hidden">
+        <span>⚠️</span>
+        <span id="auth-error-msg"></span>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" id="lbl-email">Email Address</label>
+          <input type="email" class="form-input" id="login-email"
+                 placeholder="student@school.edu" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="lbl-password">Password</label>
+          <input type="password" class="form-input" id="login-password"
+                 placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full btn--lg" id="login-btn">
+          Sign In
+        </button>
+      </form>
+
+      <div class="divider-text"><span id="or-text">or</span></div>
+
+      <!-- REGISTER FORM (hidden by default) -->
+      <form id="register-form" class="hidden">
+        <div class="form-group">
+          <label class="form-label" id="lbl-name">Full Name</label>
+          <input type="text" class="form-input" id="reg-name"
+                 placeholder="Anita Sharma" autocomplete="name" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="reg-email"
+                 placeholder="student@school.edu" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password (min 6 chars)</label>
+          <input type="password" class="form-input" id="reg-password"
+                 placeholder="••••••••" minlength="6" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Account Type</label>
+          <div class="role-select-wrap">
+            <label class="role-option selected" id="role-student">
+              <input type="radio" name="role" value="student" checked>
+              <div class="role-icon">🎓</div>
+              <div class="role-label">Student</div>
+            </label>
+            <label class="role-option" id="role-admin">
+              <input type="radio" name="role" value="admin">
+              <div class="role-icon">👨‍🏫</div>
+              <div class="role-label">Teacher / Admin</div>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--green btn--full btn--lg" id="reg-btn">
+          Create Account
+        </button>
+      </form>
+
+      <div class="form-toggle" id="toggle-login">
+        <span id="toggle-text">New here?</span>
+        <a href="#" id="toggle-link" onclick="toggleForm(event)">Create account</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (Auth.isLoggedIn()) {
+      window.location.href = Auth.isAdmin() ? '/admin.html' : '/dashboard.html';
+    }
+
+    let currentLang = 'en';
+    let showingRegister = false;
+
+    const strings = {
+      en: {
+        email: 'Email Address', password: 'Password', name: 'Full Name',
+        signin: 'Sign In', or: 'or', newHere: 'New here?',
+        createAcc: 'Create account', haveAcc: 'Already have an account?', signIn: 'Sign in'
+      },
+      hi: {
+        email: 'ईमेल पता', password: 'पासवर्ड', name: 'पूरा नाम',
+        signin: 'लॉग इन करें', or: 'या', newHere: 'नए हैं?',
+        createAcc: 'खाता बनाएं', haveAcc: 'पहले से खाता है?', signIn: 'साइन इन करें'
+      }
+    };
+
+    function switchLang(lang, btn) {
+      currentLang = lang;
+      setLanguage(lang);
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateLabels();
+    }
+
+    function updateLabels() {
+      const s = strings[currentLang];
+      document.getElementById('lbl-email').textContent = s.email;
+      document.getElementById('lbl-password').textContent = s.password;
+      document.getElementById('lbl-name').textContent = s.name;
+      document.getElementById('or-text').textContent = s.or;
+      if (!showingRegister) {
+        document.getElementById('login-btn').textContent = s.signin;
+        document.getElementById('toggle-text').textContent = s.newHere;
+        document.getElementById('toggle-link').textContent = s.createAcc;
+      } else {
+        document.getElementById('toggle-text').textContent = s.haveAcc;
+        document.getElementById('toggle-link').textContent = s.signIn;
+      }
+    }
+
+    function toggleForm(e) {
+      e.preventDefault();
+      showingRegister = !showingRegister;
+      document.getElementById('login-form').classList.toggle('hidden', showingRegister);
+      document.getElementById('register-form').classList.toggle('hidden', !showingRegister);
+      document.getElementById('auth-error').classList.add('hidden');
+      updateLabels();
+    }
+
+    // Role option selector
+    document.querySelectorAll('.role-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+
+    // Login form
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('auth-error');
+      errEl.classList.add('hidden');
+      setLoading(btn, true);
+
+      try {
+        const data = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: document.getElementById('login-email').value.trim(),
+            password: document.getElementById('login-password').value
+          })
+        });
+        Auth.setSession(data.access_token, data.role, data.name);
+        setLanguage(currentLang);
+        window.location.href = data.role === 'admin' ? '/admin.html' : '/dashboard.html';
+      } catch (err) {
+        errEl.classList.remove('hidden');
+        document.getElementById('auth-error-msg').textContent = err.message;
+        setLoading(btn, false);
+      }
+    });
+
+    // Register form
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('reg-btn');
+      const errEl = document.getElementById('auth-error');
+      errEl.classList.add('hidden');
+      setLoading(btn, true);
+
+      const role = document.querySelector('input[name="role"]:checked').value;
+      try {
+        await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('reg-name').value.trim(),
+            email: document.getElementById('reg-email').value.trim(),
+            password: document.getElementById('reg-password').value,
+            role,
+            language: currentLang
+          })
+        });
+        showToast('Account created! Please sign in.', 'success');
+        toggleForm({ preventDefault: () => {} });
+      } catch (err) {
+        errEl.classList.remove('hidden');
+        document.getElementById('auth-error-msg').textContent = err.message;
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("[SW] Registered"))
+        .catch(e => console.warn("[SW] Registration failed:", e));
+    }
+  </script>
+</body>
+</html>

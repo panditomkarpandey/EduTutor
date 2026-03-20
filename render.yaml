@@ -1,0 +1,40 @@
+# render.yaml
+# One-click deployment to Render.com
+# https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: education-tutor-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MONGODB_URI
+        sync: false          # set manually in Render dashboard
+      - key: MONGODB_DB
+        value: education_tutor
+      - key: JWT_SECRET_KEY
+        generateValue: true  # Render auto-generates a secure random value
+      - key: JWT_EXPIRE_MINUTES
+        value: "1440"
+      - key: OLLAMA_BASE_URL
+        sync: false          # set to your external Ollama server URL
+      - key: LLM_MODEL
+        value: neural-chat
+      - key: LLM_TIMEOUT
+        value: "120"
+      - key: TOP_K_CHUNKS
+        value: "10"
+      - key: MAX_CONTEXT_TOKENS
+        value: "1500"
+      - key: PRUNE_SIMILARITY
+        value: "0.45"
+      - key: MAX_PDF_SIZE_MB
+        value: "50"
+      - key: LOG_FORMAT
+        value: json
+      - key: ALLOWED_ORIGINS
+        sync: false          # set to your Vercel frontend URL

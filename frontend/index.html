@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Education Tutor – AI Learning for Rural India</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1A237E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { overflow-x: hidden; }
+    .hero {
+      background: linear-gradient(145deg, var(--navy) 0%, var(--navy-light) 55%, #5c6bc0 100%);
+      color: white;
+      padding: 60px 16px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: 50%;
+      transform: translateX(-50%);
+      width: 120%; height: 80px;
+      background: var(--cream);
+      border-radius: 50% 50% 0 0;
+    }
+    .hero h1 { color: white; font-size: clamp(1.8rem, 5vw, 3rem); }
+    .hero p  { color: rgba(255,255,255,0.85); font-size: 1.05rem; margin-top: 12px; max-width: 540px; margin-left: auto; margin-right: auto; }
+    .hero-emoji { font-size: 4rem; margin-bottom: 16px; display: block; }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+
+    .features { padding: 60px 16px; background: var(--cream); }
+    .features h2 { text-align: center; margin-bottom: 32px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 22px 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .feature-card .feat-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .feature-card h3 { font-size: 1rem; margin-bottom: 6px; }
+    .feature-card p  { font-size: 0.84rem; }
+
+    .footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      padding: 20px 16px;
+      font-size: 0.82rem;
+    }
+    .footer strong { color: white; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar__brand">
+      <span class="logo-icon">📚</span>
+      <span>Education Tutor</span>
+    </div>
+    <div class="navbar__actions">
+      <a href="/login.html" class="btn btn--ghost btn--sm">Sign In</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <span class="hero-emoji">🇮🇳</span>
+    <h1>AI Tutor for Every Student</h1>
+    <p>Learn from your textbooks using AI — works in low bandwidth areas across rural India. Ask questions in Hindi or English.</p>
+    <div class="hero-btns">
+      <a href="/login.html" class="btn btn--primary btn--lg">Start Learning Free</a>
+      <a href="#features" class="btn btn--ghost btn--lg">Learn More</a>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <h2>Why Education Tutor?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feat-icon">🤖</div>
+        <h3>AI-Powered Answers</h3>
+        <p>Ask any question from your textbook and get clear, structured explanations instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🌐</div>
+        <h3>Low Bandwidth</h3>
+        <p>Optimised for slow mobile internet. Works on 2G/3G connections across rural India.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🗣️</div>
+        <h3>Hindi + English</h3>
+        <p>Ask questions and receive answers in Hindi (हिंदी) or English — your choice.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">✏️</div>
+        <h3>Practice Quizzes</h3>
+        <p>AI generates custom quiz questions from your textbook to test your understanding.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🎤</div>
+        <h3>Voice Input</h3>
+        <p>Speak your question out loud — no typing needed. Great for younger students.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">📊</div>
+        <h3>Learning History</h3>
+        <p>Track every question you've asked and revisit answers any time.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <strong>Education Tutor</strong> · AI-powered learning for rural India · Built with ❤️ for Bharat
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (Auth.isLoggedIn()) {
+      window.location.href = Auth.isAdmin() ? '/admin.html' : '/dashboard.html';
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("[SW] Registered"))
+        .catch(e => console.warn("[SW] Registration failed:", e));
+    }
+  </script>
+</body>
+</html>

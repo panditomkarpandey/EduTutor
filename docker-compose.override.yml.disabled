@@ -1,0 +1,22 @@
+# docker-compose.override.yml
+# Automatically loaded alongside docker-compose.yml in development.
+# Enables hot-reload, debug logging, and exposes extra ports.
+# Do NOT commit secrets — use .env file.
+
+
+services:
+  backend:
+    # Override CMD for hot-reload during development
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    volumes:
+      # Mount source code so changes reflect without rebuild
+      - ./backend:/app
+    environment:
+      - LOG_LEVEL=DEBUG
+      - LOG_FORMAT=console
+    ports:
+      - "8000:8000"   # direct access to API (bypasses nginx)
+
+  nginx:
+    volumes:
+      - ./frontend:/usr/share/nginx/html   # live-reload frontend files

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard – Education Tutor</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1A237E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { overflow: hidden; }
+
+    /* Main layout: sidebar + chat */
+    .app-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      transition: transform 0.25s ease;
+    }
+    .sidebar__section { padding: 12px 14px 6px; }
+    .sidebar__title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+    .sidebar__nav { display: flex; flex-direction: column; gap: 2px; }
+    .sidebar__nav a, .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      text-decoration: none;
+    }
+    .sidebar__nav a:hover, .nav-item:hover { background: var(--cream); color: var(--text-dark); text-decoration: none; }
+    .sidebar__nav a.active, .nav-item.active { background: var(--navy-pale); color: var(--navy); font-weight: 600; }
+    .sidebar__nav .icon { width: 20px; text-align: center; font-size: 1rem; }
+
+    /* Textbook selector */
+    .tb-select {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tb-select select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.83rem;
+      background: var(--cream);
+    }
+
+    /* Mobile sidebar toggle */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 200;
+      width: 46px; height: 46px;
+      border-radius: var(--radius-full);
+      background: var(--navy);
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      box-shadow: var(--shadow-md);
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 150;
+    }
+
+    /* Main content area */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Panel switching */
+    .panel { display: none; flex-direction: column; height: 100%; }
+    .panel.active { display: flex; }
+
+    /* ── History panel ── */
+    .history-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .history-item:hover { border-color: var(--navy-light); }
+    .history-item__q {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+    .history-item__meta { font-size: 0.78rem; color: var(--text-soft); display: flex; gap: 10px; }
+
+    /* ── Quiz panel ── */
+    .quiz-panel { padding: 16px; overflow-y: auto; flex: 1; }
+    .quiz-question { background: var(--white); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+    .quiz-question h4 { font-size: 0.9rem; margin-bottom: 10px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-option {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.87rem;
+      cursor: pointer;
+      text-align: left;
+      background: var(--white);
+      transition: all var(--transition);
+    }
+    .quiz-option:hover { border-color: var(--navy-light); background: var(--navy-pale); }
+    .quiz-option.selected { border-color: var(--navy); background: var(--navy-pale); }
+    .quiz-option.correct  { border-color: var(--green); background: var(--green-pale); }
+    .quiz-option.wrong    { border-color: #c62828; background: #ffebee; }
+
+    /* ── Semantic search panel ── */
+    .search-panel { padding: 16px; overflow-y: auto; flex: 1; }
+    .search-result {
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      font-size: 0.87rem;
+    }
+    .search-result__chapter { font-weight: 700; color: var(--navy); font-size: 0.8rem; margin-bottom: 4px; }
+    .search-result__text { color: var(--text-mid); line-height: 1.5; }
+    .search-result__score { font-size: 0.75rem; color: var(--text-soft); margin-top: 4px; }
+
+    /* Responsive: mobile sidebar */
+    @media (max-width: 640px) {
+      .sidebar { position: fixed; left: 0; top: 56px; height: calc(100vh - 56px); z-index: 160; transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .sidebar-toggle { display: flex; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar__brand">
+      <span class="logo-icon">📚</span>
+      <span>EduTutor</span>
+    </div>
+    <div class="navbar__actions">
+      <div class="navbar__user" id="nav-user" style="display:none">
+        <div class="navbar__user-avatar" id="nav-avatar"></div>
+        <span id="nav-name" class="hidden" style="display:none"></span>
+      </div>
+      <button class="btn btn--ghost btn--sm" id="logout-btn">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Mobile sidebar overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Textbook selector -->
+      <div class="tb-select">
+        <div class="sidebar__title">Textbook</div>
+        <select id="tb-select" onchange="onTextbookChange()">
+          <option value="">All textbooks</option>
+        </select>
+      </div>
+
+      <!-- Navigation -->
+      <div class="sidebar__section">
+        <div class="sidebar__title">Menu</div>
+        <div class="sidebar__nav">
+          <button class="nav-item active" data-panel="chat-panel" onclick="switchPanel(this)">
+            <span class="icon">💬</span> Ask a Question
+          </button>
+          <button class="nav-item" data-panel="history-panel" onclick="switchPanel(this)">
+            <span class="icon">📖</span> My History
+          </button>
+          <button class="nav-item" data-panel="quiz-panel" onclick="switchPanel(this)">
+            <span class="icon">✏️</span> Take a Quiz
+          </button>
+          <button class="nav-item" data-panel="search-panel" onclick="switchPanel(this)">
+            <span class="icon">🔍</span> Search Books
+          </button>
+          <button class="nav-item" data-panel="progress-panel" onclick="switchPanel(this)">
+            <span class="icon">📈</span> My Progress
+          </button>
+        </div>
+      </div>
+
+      <!-- Language -->
+      <div class="sidebar__section mt-3">
+        <div class="sidebar__title">Language</div>
+        <div style="display:flex; gap:6px; padding-bottom:8px">
+          <button class="btn btn--sm btn--secondary" id="lang-en" onclick="switchUILang('en')">EN</button>
+          <button class="btn btn--sm btn--secondary" id="lang-hi" onclick="switchUILang('hi')">हिं</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <main class="main-area">
+
+      <!-- ── CHAT PANEL ─────────────────────────────────────────────────────── -->
+      <div class="panel active" id="chat-panel">
+        <div class="chat-messages" id="chat-messages">
+          <!-- Welcome -->
+          <div id="welcome-msg" style="max-width:700px;margin:0 auto;width:100%">
+            <div class="card" style="text-align:center;padding:28px 20px">
+              <div style="font-size:3rem;margin-bottom:12px">🇮🇳</div>
+              <h2>Namaste! 🙏</h2>
+              <p style="margin-top:8px">Ask me anything about your textbooks. I can explain concepts, give examples, and create practice questions.</p>
+              <div class="mt-3" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+                <button class="btn btn--sm btn--secondary" onclick="setQuestion('Explain photosynthesis simply')">Photosynthesis</button>
+                <button class="btn btn--sm btn--secondary" onclick="setQuestion('What is the Pythagorean theorem?')">Pythagoras</button>
+                <button class="btn btn--sm btn--secondary" onclick="setQuestion('Tell me about the Indian freedom movement')">Freedom Movement</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-bar">
+          <div class="chat-input-row">
+            <button class="voice-btn" id="voice-btn" title="Voice input" onclick="toggleVoice()">🎤</button>
+            <textarea class="chat-input" id="chat-input"
+              placeholder="Ask your question here…"
+              rows="1"
+              onkeydown="handleChatKey(event)"
+              oninput="autoResize(this)"></textarea>
+            <button class="chat-send-btn" id="send-btn" onclick="sendQuestion()" title="Send">➤</button>
+          </div>
+          <div style="text-align:center;font-size:0.72rem;color:var(--text-soft);margin-top:6px">
+            Powered by AI · Low-bandwidth optimised
+          </div>
+        </div>
+      </div>
+
+      <!-- ── HISTORY PANEL ───────────────────────────────────────────────────── -->
+      <div class="panel" id="history-panel">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <h3 style="font-size:1rem">My Question History</h3>
+          <button class="btn btn--sm btn--danger" onclick="clearHistory()">Clear</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="text-center text-soft" style="padding:40px 0">Loading history…</div>
+        </div>
+      </div>
+
+      <!-- ── QUIZ PANEL ──────────────────────────────────────────────────────── -->
+      <div class="panel" id="quiz-panel">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1rem">Practice Quiz</h3>
+        </div>
+        <div class="quiz-panel" id="quiz-content">
+          <div id="quiz-generate-area">
+            <div class="card">
+              <h3 class="mb-3">Generate a Quiz</h3>
+              <div class="form-group">
+                <label class="form-label">Topic (optional)</label>
+                <input type="text" class="form-input" id="quiz-topic" placeholder="e.g. Newton's Laws, Photosynthesis">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Number of Questions</label>
+                <select class="form-select" id="quiz-num">
+                  <option value="3">3 Questions</option>
+                  <option value="5" selected>5 Questions</option>
+                  <option value="8">8 Questions</option>
+                  <option value="10">10 Questions</option>
+                </select>
+              </div>
+              <button class="btn btn--primary btn--full" id="gen-quiz-btn" onclick="generateQuiz()">
+                Generate Quiz ✏️
+              </button>
+              <div class="alert alert--warning mt-3 hidden" id="quiz-warn">
+                Please select a textbook from the sidebar first.
+              </div>
+            </div>
+          </div>
+
+          <div id="quiz-area" class="hidden">
+            <div class="flex-between mb-3">
+              <h3 id="quiz-title" style="font-size:1rem">Quiz</h3>
+              <button class="btn btn--sm btn--secondary" onclick="resetQuiz()">New Quiz</button>
+            </div>
+            <div id="quiz-questions"></div>
+            <button class="btn btn--primary btn--full mt-3" id="submit-quiz-btn" onclick="submitQuiz()">
+              Submit Answers
+            </button>
+            <div id="quiz-result" class="hidden mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SEARCH PANEL ────────────────────────────────────────────────────── -->
+      <div class="panel" id="search-panel">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1rem">Semantic Search</h3>
+        </div>
+        <div class="search-panel">
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <input type="text" class="form-input" id="search-input" placeholder="Search textbook content semantically…"
+                   onkeydown="if(event.key==='Enter') doSearch()">
+            <button class="btn btn--primary" onclick="doSearch()">Search</button>
+          </div>
+          <div id="search-results"></div>
+        </div>
+      </div>
+
+      <!-- ── PROGRESS PANEL ──────────────────────────────────────────────── -->
+      <div class="panel" id="progress-panel">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1rem">My Learning Progress</h3>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+
+          <!-- Stats row -->
+          <div class="stats-grid" id="prog-stats">
+            <div class="stat-card"><div class="stat-card__value" id="prog-questions">–</div><div class="stat-card__label">Questions</div></div>
+            <div class="stat-card"><div class="stat-card__value" id="prog-quizzes">–</div><div class="stat-card__label">Quizzes</div></div>
+            <div class="stat-card"><div class="stat-card__value" id="prog-score">–</div><div class="stat-card__label">Avg Score</div></div>
+            <div class="stat-card"><div class="stat-card__value" id="prog-streak">–</div><div class="stat-card__label">Day Streak</div></div>
+          </div>
+
+          <!-- Subject breakdown -->
+          <div class="card">
+            <h3 style="font-size:0.9rem;margin-bottom:12px">📚 Questions by Subject</h3>
+            <div id="subject-bars"><div class="text-soft text-small">Loading…</div></div>
+          </div>
+
+          <!-- Activity chart -->
+          <div class="card">
+            <h3 style="font-size:0.9rem;margin-bottom:12px">📅 Activity (Last 7 Days)</h3>
+            <div id="activity-chart" style="display:flex;align-items:flex-end;gap:6px;height:60px">
+              <div class="text-soft text-small">Loading…</div>
+            </div>
+            <div id="activity-labels" style="display:flex;gap:6px;margin-top:4px;font-size:0.68rem;color:var(--text-soft)"></div>
+          </div>
+
+          <!-- Bookmarks -->
+          <div class="card">
+            <h3 style="font-size:0.9rem;margin-bottom:12px">🔖 Bookmarked Answers</h3>
+            <div id="bookmarks-list"><div class="text-soft text-small">No bookmarks yet.</div></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/offline-queue.js"></script>
+  <script>
+    if (!Auth.requireAuth('/login.html')) { /* redirect handled */ }
+
+    let currentTextbookId = '';
+    let currentQuizId = '';
+    let quizAnswers = {};
+    let mediaRecorder = null;
+    let isRecording = false;
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      setupNavbar();
+      loadTextbooks();
+      syncLangButton();
+    });
+
+    function syncLangButton() {
+      const lang = getLanguage();
+      document.getElementById('lang-en').classList.toggle('btn--primary', lang === 'en');
+      document.getElementById('lang-hi').classList.toggle('btn--primary', lang === 'hi');
+    }
+
+    function switchUILang(lang) {
+      setLanguage(lang);
+      syncLangButton();
+      showToast(lang === 'hi' ? 'भाषा बदली: हिंदी' : 'Language: English', 'success');
+    }
+
+    // ── Sidebar ───────────────────────────────────────────────────────────────
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('open');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+
+    // ── Panel switching ───────────────────────────────────────────────────────
+    function switchPanel(btn) {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.panel).classList.add('active');
+
+      if (btn.dataset.panel === 'history-panel') loadHistory();
+      if (btn.dataset.panel === 'progress-panel') loadProgress();
+      closeSidebar();
+    }
+
+    // ── Textbooks ─────────────────────────────────────────────────────────────
+    async function loadTextbooks() {
+      try {
+        const data = await apiFetch('/search/textbooks');
+        const select = document.getElementById('tb-select');
+        select.innerHTML = '<option value="">All textbooks</option>';
+        data.results.forEach(tb => {
+          const opt = document.createElement('option');
+          opt.value = tb._id;
+          opt.textContent = `${tb.class_name} – ${tb.subject}`;
+          select.appendChild(opt);
+        });
+      } catch (e) { /* silent */ }
+    }
+
+    function onTextbookChange() {
+      currentTextbookId = document.getElementById('tb-select').value;
+    }
+
+    // ── Chat ──────────────────────────────────────────────────────────────────
+    function setQuestion(q) {
+      document.getElementById('chat-input').value = q;
+      document.getElementById('chat-input').focus();
+    }
+
+    function handleChatKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendQuestion();
+      }
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function appendMessage(role, content) {
+      const welcome = document.getElementById('welcome-msg');
+      if (welcome) welcome.remove();
+
+      const messages = document.getElementById('chat-messages');
+      const isBot = role === 'bot';
+      const div = document.createElement('div');
+      div.className = `msg msg--${role}`;
+
+      const avatar = isBot ? '🤖' : '🧑';
+      div.innerHTML = `
+        <div class="msg__avatar">${avatar}</div>
+        <div class="msg__bubble" id="msg-${Date.now()}">${content}</div>
+      `;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    function renderAnswer(answer) {
+      if (typeof answer === 'string') {
+        try { answer = JSON.parse(answer); } catch(e) { return `<p>${escapeHtml(answer)}</p>`; }
+      }
+      if (typeof answer !== 'object') return `<p>${escapeHtml(String(answer))}</p>`;
+
+      return `<div class="answer-card">
+        <div class="answer-section answer-section--explain">
+          <h4>📘 Explanation</h4>
+          <p>${escapeHtml(answer.simple_explanation || '')}</p>
+        </div>
+        <div class="answer-section answer-section--example">
+          <h4>💡 Example</h4>
+          <p>${escapeHtml(answer.example || '')}</p>
+        </div>
+        <div class="answer-section answer-section--summary">
+          <h4>📝 Summary</h4>
+          <p>${escapeHtml(answer.summary || '')}</p>
+        </div>
+        <div class="answer-section answer-section--practice">
+          <h4>✏️ Practice Question</h4>
+          <p>${escapeHtml(answer.practice_question || '')}</p>
+        </div>
+      </div>`;
+    }
+
+    async function sendQuestion() {
+      const input = document.getElementById('chat-input');
+      const q = input.value.trim();
+      if (!q) return;
+
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+      input.value = '';
+      input.style.height = 'auto';
+
+      appendMessage('user', escapeHtml(q));
+
+      // If offline, queue for later
+      if (!navigator.onLine) {
+        await OfflineQueue.enqueue(q, currentTextbookId, getLanguage());
+        const qCount = await OfflineQueue.count();
+        appendMessage('bot', `<div class="alert alert--warning">📵 You are offline. Your question has been queued (${qCount} queued). It will be answered when you reconnect.</div>`);
+        sendBtn.disabled = false;
+        return;
+      }
+
+      // Typing indicator
+      const typingDiv = appendMessage('bot', `<span class="spinner spinner--dark"></span> ${i18n.t('chat.thinking')}`);
+
+      try {
+        const body = { question: q, language: getLanguage() };
+        if (currentTextbookId) body.textbook_id = currentTextbookId;
+
+        const data = await apiFetch('/chat/ask', {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+
+        const bubble = typingDiv.querySelector('.msg__bubble');
+        bubble.innerHTML = renderAnswer(data.answer);
+
+        if (data.cached) {
+          const badge = document.createElement('div');
+          badge.innerHTML = `<span class="badge badge--gold" style="margin-top:6px">⚡ Cached</span>`;
+          bubble.appendChild(badge);
+        }
+
+        if (data.sources && data.sources.length) {
+          const srcDiv = document.createElement('div');
+          srcDiv.style.cssText = 'margin-top:8px;display:flex;flex-wrap:wrap;gap:4px';
+          data.sources.slice(0, 3).forEach(s => {
+            srcDiv.innerHTML += `<span class="badge badge--navy" title="Score: ${s.score}">📄 ${escapeHtml(s.chapter.slice(0, 30))}</span>`;
+          });
+          bubble.appendChild(srcDiv);
+        }
+      } catch (err) {
+        const bubble = typingDiv.querySelector('.msg__bubble');
+        bubble.innerHTML = `<span style="color:#c62828">⚠️ ${escapeHtml(err.message)}</span>`;
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // ── History ───────────────────────────────────────────────────────────────
+    async function loadHistory() {
+      const container = document.getElementById('history-list');
+      container.innerHTML = '<div class="text-center text-soft" style="padding:30px">Loading…</div>';
+      try {
+        const data = await apiFetch('/chat/history?limit=30');
+        if (!data.history.length) {
+          container.innerHTML = '<div class="text-center text-soft" style="padding:40px">No questions yet. Start asking!</div>';
+          return;
+        }
+        container.innerHTML = '';
+        data.history.forEach(h => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          const ans = typeof h.answer === 'string' ? h.answer : JSON.stringify(h.answer);
+          div.innerHTML = `
+            <div class="history-item__q">${escapeHtml(h.question)}</div>
+            <div class="history-item__meta">
+              <span>${relativeTime(h.created_at)}</span>
+              ${h.cached ? '<span class="badge badge--gold">Cached</span>' : ''}
+              ${h.subject ? `<span>${escapeHtml(h.subject)}</span>` : ''}
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      } catch(e) {
+        container.innerHTML = `<div class="alert alert--error">${escapeHtml(e.message)}</div>`;
+      }
+    }
+
+    async function clearHistory() {
+      if (!confirm('Clear all question history?')) return;
+      await apiFetch('/chat/history', { method: 'DELETE' });
+      showToast('History cleared', 'success');
+      loadHistory();
+    }
+
+    // ── Quiz ──────────────────────────────────────────────────────────────────
+    async function generateQuiz() {
+      if (!currentTextbookId) {
+        document.getElementById('quiz-warn').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('quiz-warn').classList.add('hidden');
+      const btn = document.getElementById('gen-quiz-btn');
+      setLoading(btn, true);
+
+      try {
+        const data = await apiFetch('/quiz/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            textbook_id: currentTextbookId,
+            topic: document.getElementById('quiz-topic').value.trim() || null,
+            num_questions: parseInt(document.getElementById('quiz-num').value),
+            language: getLanguage()
+          })
+        });
+
+        currentQuizId = data.quiz_id;
+        quizAnswers = {};
+        renderQuiz(data.questions);
+        document.getElementById('quiz-generate-area').classList.add('hidden');
+        document.getElementById('quiz-area').classList.remove('hidden');
+        document.getElementById('quiz-title').textContent = `Quiz (${data.total} questions)`;
+        document.getElementById('quiz-result').classList.add('hidden');
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+
+    function renderQuiz(questions) {
+      const container = document.getElementById('quiz-questions');
+      container.innerHTML = '';
+      questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'quiz-question';
+        div.innerHTML = `<h4>${i+1}. ${escapeHtml(q.question)}</h4>
+          <div class="quiz-options" id="q-opts-${i}">
+            ${q.options.map((opt, j) => `
+              <button class="quiz-option" onclick="selectOption(${i}, '${opt[0]}', this)">
+                ${escapeHtml(opt)}
+              </button>`).join('')}
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function selectOption(qIdx, val, btn) {
+      document.querySelectorAll(`#q-opts-${qIdx} .quiz-option`).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      quizAnswers[qIdx] = val;
+    }
+
+    async function submitQuiz() {
+      const btn = document.getElementById('submit-quiz-btn');
+      setLoading(btn, true);
+      try {
+        const data = await apiFetch(`/quiz/submit/${currentQuizId}`, {
+          method: 'POST',
+          body: JSON.stringify({ answers: quizAnswers })
+        });
+
+        const result = document.getElementById('quiz-result');
+        result.classList.remove('hidden');
+        const color = data.score >= 70 ? 'green' : data.score >= 40 ? 'gold' : 'saffron';
+        result.innerHTML = `
+          <div class="card text-center">
+            <div style="font-size:2.5rem;font-family:var(--font-display);color:var(--${color});font-weight:800">${data.score}%</div>
+            <p style="margin-top:4px">${data.correct} / ${data.total} correct</p>
+          </div>`;
+
+        data.results.forEach((r, i) => {
+          const opts = document.querySelectorAll(`#q-opts-${i} .quiz-option`);
+          opts.forEach(o => {
+            if (o.textContent.trim().startsWith(r.correct_answer)) o.classList.add('correct');
+            if (o.classList.contains('selected') && !r.is_correct) o.classList.add('wrong');
+            o.disabled = true;
+          });
+        });
+        btn.disabled = true;
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+
+    function resetQuiz() {
+      document.getElementById('quiz-generate-area').classList.remove('hidden');
+      document.getElementById('quiz-area').classList.add('hidden');
+    }
+
+    // ── Search ────────────────────────────────────────────────────────────────
+    async function doSearch() {
+      const q = document.getElementById('search-input').value.trim();
+      if (!q) return;
+      const container = document.getElementById('search-results');
+      container.innerHTML = '<div class="text-soft text-small">Searching…</div>';
+      try {
+        const data = await apiFetch(`/search/semantic?q=${encodeURIComponent(q)}&limit=6`);
+        if (!data.results.length) {
+          container.innerHTML = '<div class="text-soft">No results found.</div>';
+          return;
+        }
+        container.innerHTML = data.results.map(r => `
+          <div class="search-result">
+            <div class="search-result__chapter">📄 ${escapeHtml(r.chapter)} · ${escapeHtml(r.subject)}</div>
+            <div class="search-result__text">${escapeHtml(r.text)}</div>
+            <div class="search-result__score">Relevance: ${Math.round(r.score * 100)}%</div>
+          </div>`).join('');
+      } catch(e) {
+        container.innerHTML = `<div class="alert alert--error">${escapeHtml(e.message)}</div>`;
+      }
+    }
+
+    // ── Voice Input ───────────────────────────────────────────────────────────
+    async function toggleVoice() {
+      const btn = document.getElementById('voice-btn');
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        showToast('Voice input not supported on this browser', 'error');
+        return;
+      }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SR();
+      recognition.lang = getLanguage() === 'hi' ? 'hi-IN' : 'en-IN';
+      recognition.onstart = () => { btn.classList.add('recording'); btn.textContent = '🔴'; };
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        document.getElementById('chat-input').value = text;
+        showToast(`Heard: "${text}"`, 'success');
+      };
+      recognition.onend = () => { btn.classList.remove('recording'); btn.textContent = '🎤'; };
+      recognition.onerror = () => { showToast('Voice recognition failed', 'error'); btn.textContent = '🎤'; };
+      recognition.start();
+    }
+    // ── Progress ──────────────────────────────────────────────────────────────
+    async function loadProgress() {
+      try {
+        const [summary, subjects, streak] = await Promise.all([
+          apiFetch('/progress/summary'),
+          apiFetch('/progress/subjects'),
+          apiFetch('/progress/streak')
+        ]);
+
+        // Stats
+        setText('#prog-questions', summary.total_questions);
+        setText('#prog-quizzes',   summary.total_quizzes);
+        setText('#prog-score',     summary.avg_quiz_score + '%');
+        setText('#prog-streak',    streak.current_streak + '🔥');
+
+        // Subject bars
+        const maxQ = Math.max(...subjects.subjects.map(s => s.questions), 1);
+        document.getElementById('subject-bars').innerHTML = subjects.subjects.length
+          ? subjects.subjects.map(s => `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:0.83rem">
+              <div style="width:80px;text-align:right;color:var(--text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(s.subject)}</div>
+              <div style="flex:1;height:18px;background:var(--cream);border-radius:999px;overflow:hidden">
+                <div style="width:${(s.questions/maxQ)*100}%;height:100%;background:var(--saffron);border-radius:999px"></div>
+              </div>
+              <div style="width:24px;font-weight:700">${s.questions}</div>
+            </div>`).join('')
+          : '<div class="text-soft text-small">No subject data yet.</div>';
+
+        // Activity chart (last 7 days)
+        const days = streak.active_days.slice(0, 7).reverse();
+        const maxCount = Math.max(...days.map(d => d.questions), 1);
+        const chartEl   = document.getElementById('activity-chart');
+        const labelsEl  = document.getElementById('activity-labels');
+        if (days.length) {
+          chartEl.innerHTML = days.map(d => {
+            const h = Math.max(8, Math.round((d.questions / maxCount) * 56));
+            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="font-size:0.68rem;color:var(--text-soft)">${d.questions}</div>
+              <div style="width:100%;height:${h}px;background:var(--navy-light);border-radius:4px 4px 0 0"></div>
+            </div>`;
+          }).join('');
+          labelsEl.innerHTML = days.map(d =>
+            `<div style="flex:1;text-align:center">${d.date.slice(5)}</div>`
+          ).join('');
+        } else {
+          chartEl.innerHTML = '<div class="text-soft text-small">No activity yet.</div>';
+        }
+
+        // Bookmarks
+        const bmData = await apiFetch('/progress/bookmarks');
+        const bmEl = document.getElementById('bookmarks-list');
+        bmEl.innerHTML = bmData.bookmarks.length
+          ? bmData.bookmarks.map(b => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+              <div style="font-weight:600;margin-bottom:3px">${escapeHtml(b.question)}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${b.subject ? `<span class="badge badge--navy">${escapeHtml(b.subject)}</span>` : ''}
+                <span class="text-soft text-small">${relativeTime(b.bookmarked_at)}</span>
+                <button onclick="removeBookmark('${b._id}')" style="background:none;border:none;color:var(--text-soft);font-size:0.75rem;cursor:pointer;margin-left:auto">✕ Remove</button>
+              </div>
+            </div>`).join('')
+          : '<div class="text-soft text-small">No bookmarks yet. Long-press any answer to bookmark it.</div>';
+
+      } catch(e) {
+        console.error('Progress load failed:', e);
+      }
+    }
+
+    async function removeBookmark(bmId) {
+      await apiFetch(`/progress/bookmark/${bmId}`, { method: 'DELETE' });
+      loadProgress();
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("[SW] Registered"))
+        .catch(e => console.warn("[SW] Registration failed:", e));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[env]
+MONGODB_DB = "education_tutor"
+LLM_MODEL = "neural-chat"
+LLM_TIMEOUT = "120"
+TOP_K_CHUNKS = "10"
+MAX_CONTEXT_TOKENS = "1500"
+PRUNE_SIMILARITY = "0.45"
+MAX_PDF_SIZE_MB = "50"
+LOG_FORMAT = "json"
