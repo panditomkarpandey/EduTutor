@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 📚 Education Tutor for Remote India
 
 **AI-powered RAG tutoring platform for rural students** — built for low bandwidth, Hindi + English, CBSE/ICSE/State board support.
@@ -364,3 +365,6 @@ Pull requests welcome! Areas to improve:
 MIT License — Free to use, modify, and deploy.
 
 Built with ❤️ for students across rural Bharat 🇮🇳
+=======
+# EduTutor
+>>>>>>> 68868ecd9a72f407a59bc20244795799b761566d
